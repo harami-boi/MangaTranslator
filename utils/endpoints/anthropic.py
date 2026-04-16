@@ -112,6 +112,12 @@ def call_anthropic_endpoint(
         "max_tokens": generation_config.get("max_tokens", 4096),
     }
 
+    # Opus 4.7: sampling parameters removed (temperature, top_k return 400)
+    is_47 = generation_config.get("is_47_model", False)
+    if is_47:
+        payload.pop("temperature", None)
+        payload.pop("top_k", None)
+
     try:
         thinking_type = generation_config.get("thinking_type")
         reasoning_effort = generation_config.get("reasoning_effort")
@@ -137,9 +143,12 @@ def call_anthropic_endpoint(
     try:
         effort = generation_config.get("effort")
         is_46 = generation_config.get("is_46_model", False)
-        valid_efforts = (
-            ("max", "high", "medium", "low") if is_46 else ("high", "medium", "low")
-        )
+        if is_47:
+            valid_efforts = ("max", "xhigh", "high", "medium", "low")
+        elif is_46:
+            valid_efforts = ("max", "high", "medium", "low")
+        else:
+            valid_efforts = ("high", "medium", "low")
         if effort and effort in valid_efforts:
             payload["output_config"] = {"effort": effort}
     except Exception:

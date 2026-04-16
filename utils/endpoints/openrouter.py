@@ -193,7 +193,7 @@ def call_openrouter_endpoint(
     except Exception:
         is_reasoning_model = False
 
-    # For Claude 4.6 models, reasoning.effort is ignored and adaptive thinking is used by default
+    # For Claude 4.6/4.7 models, reasoning.effort is ignored and adaptive thinking is used by default
     if reasoning_effort and is_reasoning_model and not is_46:
         reasoning_config["effort"] = reasoning_effort
 

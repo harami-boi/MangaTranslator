@@ -29,6 +29,7 @@ from utils.model_metadata import (
     is_openai_compatible_reasoning_model,
     is_openai_reasoning_model,
     is_opus_45_model,
+    is_opus_47_model,
     is_xai_reasoning_model,
     is_zai_reasoning_model,
 )
@@ -542,8 +543,8 @@ def get_reasoning_effort_config(
         is_reasoning = _is_anthropic_reasoning_model(model_name)
         if not is_reasoning:
             return False, [], None
-        # Claude 4.6 models use adaptive thinking
-        if is_46_model(model_name):
+        # Claude 4.6/4.7 models use adaptive thinking
+        if is_46_model(model_name) or is_opus_47_model(model_name):
             return True, ["auto", "none"], "auto"
         # Older models use budget-based thinking
         return True, ["high", "medium", "low", "none"], "low"
@@ -619,8 +620,10 @@ def get_effort_config(
     if provider not in ("Anthropic", "OpenRouter"):
         return False, [], None
 
-    if is_46_model(model_name):
-        # Claude 4.6 models support "max" effort level
+    if is_opus_47_model(model_name):
+        return True, ["max", "xhigh", "high", "medium", "low"], "medium"
+    elif is_46_model(model_name):
+        # Claude 4.6 models (Opus/Sonnet) support "max" effort level
         return True, ["max", "high", "medium", "low"], "medium"
     elif is_opus_45_model(model_name):
         return True, ["high", "medium", "low"], "medium"
@@ -852,7 +855,7 @@ def update_translation_ui(provider: str, _current_temp: float, ocr_method: str =
         info=reasoning_info_text,
     )
 
-    # Effort dropdown (Claude Opus 4.5 only)
+    # Effort dropdown (Claude Opus 4.5/4.6/4.7 and Sonnet 4.6)
     effort_visible, effort_choices, effort_default_value = get_effort_config(
         provider, remembered_model
     )
@@ -1019,7 +1022,7 @@ def update_params_for_model(
     max_tokens_maximum = max_tokens_cap if max_tokens_cap is not None else 63488
     max_tokens_update = gr.update(value=max_tokens_value, maximum=max_tokens_maximum)
 
-    # Effort dropdown (Claude Opus 4.5 only)
+    # Effort dropdown (Claude Opus 4.5/4.6/4.7 and Sonnet 4.6)
     effort_visible, effort_choices, effort_default_value = get_effort_config(
         provider, model_name
     )

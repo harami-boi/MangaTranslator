@@ -47,6 +47,7 @@ from utils.model_metadata import (
 from utils.model_metadata import is_openai_reasoning_model as _is_openai_reasoning_meta
 from utils.model_metadata import (
     is_opus_45_model,
+    is_opus_47_model,
     is_rosetta_model,
     is_xai_reasoning_model,
     is_zai_reasoning_model,
@@ -373,6 +374,7 @@ def _build_generation_config(
         is_reasoning = _is_reasoning_model_anthropic(model_name)
         is_opus_45 = is_opus_45_model(model_name)
         is_46 = is_46_model(model_name)
+        is_47 = is_opus_47_model(model_name)
         clamped_temp = min(temperature, 1.0)  # Anthropic caps at 1.0
         generation_config = {
             "temperature": clamped_temp,
@@ -382,16 +384,17 @@ def _build_generation_config(
         if is_reasoning:
             reasoning_effort = config.reasoning_effort or "none"
             generation_config["reasoning_effort"] = reasoning_effort
-            # Claude 4.6 models use adaptive thinking; older models use budget-based
-            if is_46:
+            # Claude 4.6/4.7 models use adaptive thinking; older models use budget-based
+            if is_46 or is_47:
                 if reasoning_effort == "auto":
                     generation_config["thinking_type"] = "adaptive"
             else:
                 if reasoning_effort != "none":
                     generation_config["thinking_type"] = "enabled"
-        if (is_opus_45 or is_46) and config.effort:
+        if (is_opus_45 or is_46 or is_47) and config.effort:
             generation_config["effort"] = config.effort
-            generation_config["is_46_model"] = is_46
+            generation_config["is_46_model"] = is_46 or is_47
+            generation_config["is_47_model"] = is_47
         return generation_config
 
     elif provider == "xAI":
@@ -477,9 +480,9 @@ def _build_generation_config(
         # On OpenRouter, Grok models lack explicit "reasoning" tags (e.g. "grok-4.1-fast")
         is_grok_reasoning = is_grok_model and "non-reasoning" not in model_lower
 
-        # Add metadata flags for OpenRouter endpoint to avoid re-parsing model names
         is_opus_45 = is_opus_45_model(model_name)
         is_46 = is_46_model(model_name)
+        is_47 = is_opus_47_model(model_name)
         generation_config["_metadata"] = {
             "is_openai_model": is_openai_model,
             "is_anthropic_model": is_anthropic_model,
@@ -493,7 +496,8 @@ def _build_generation_config(
             "is_gpt5": is_gpt5,
             "is_gpt5_model": is_gpt5_model,
             "is_opus_45": is_opus_45,
-            "is_46_model": is_46,
+            "is_46_model": is_46 or is_47,
+            "is_47_model": is_47,
         }
 
         if is_openai_reasoning or is_anthropic_reasoning or is_grok_reasoning:
@@ -508,8 +512,8 @@ def _build_generation_config(
             if config.reasoning_effort:
                 generation_config["reasoning_effort"] = config.reasoning_effort
 
-        # Opus 4.5/4.6, Sonnet 4.6 effort parameter
-        if (is_opus_45 or is_46) and config.effort:
+        # Opus 4.5/4.6/4.7, Sonnet 4.6 effort parameter
+        if (is_opus_45 or is_46 or is_47) and config.effort:
             generation_config["effort"] = config.effort
 
         # GPT-5 series verbosity
