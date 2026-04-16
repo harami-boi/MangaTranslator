@@ -1053,7 +1053,7 @@ def create_layout(
                                 ),
                                 label="Bubble/Context Resizing Method",
                                 info=(
-                                    "Method to resize cropped bubble images/full page before sending to LLM. "
+                                    "Method to resize cropped bubble images/full page before sending to LLM/OCR model. "
                                     "Model is best quality, Model (Lite) is slightly worse quality but faster/less "
                                     "memory, LANCZOS is worst quality but fastest/least memory."
                                 ),
@@ -2508,6 +2508,9 @@ def create_layout(
                 send_full_page_context,
                 whiteout_conjoined_bubbles,
                 enable_code_execution_checkbox,
+                media_resolution_dropdown,
+                media_resolution_bubbles_dropdown,
+                media_resolution_context_dropdown,
                 config_model_name,
             ],
             queue=False,

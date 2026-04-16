@@ -1581,6 +1581,10 @@ def handle_ocr_method_change(
         updates.append(gr.update())
         # Disable code execution checkbox (Gemini Flash only, disabled in text-only mode)
         updates.append(gr.update(value=False, interactive=False))
+        # Disable media resolution dropdowns (no images sent to LLM in text-only mode)
+        updates.append(gr.update(interactive=False))
+        updates.append(gr.update(interactive=False))
+        updates.append(gr.update(interactive=False))
 
         # Trigger model list refresh for providers with dynamic model lists
         if provider == "OpenRouter":
@@ -1656,6 +1660,10 @@ def handle_ocr_method_change(
 
         updates.append(gr.update(value=False, interactive=False))
         updates.append(gr.update(value=False, interactive=False))
+        updates.append(gr.update(value=False, interactive=False))
+        updates.append(gr.update(interactive=False))
+        updates.append(gr.update(interactive=False))
+        updates.append(gr.update(interactive=False))
 
         # Model list refresh — same as manga-ocr (enables text-only providers)
         if provider == "OpenRouter":
@@ -1732,6 +1740,9 @@ def handle_ocr_method_change(
         )
         updates.append(gr.update())
         # Restore code execution checkbox interactivity
+        updates.append(gr.update(interactive=True))
+        updates.append(gr.update(interactive=True))
+        updates.append(gr.update(interactive=True))
         updates.append(gr.update(interactive=True))
 
         # Trigger model list refresh for providers with dynamic or filtered model lists
