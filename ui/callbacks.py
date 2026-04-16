@@ -1659,7 +1659,7 @@ def handle_ocr_method_change(
         updates.append(batch_saved_language)
 
         updates.append(gr.update(value=False, interactive=False))
-        updates.append(gr.update(value=False, interactive=False))
+        updates.append(gr.update())
         updates.append(gr.update(value=False, interactive=False))
         updates.append(gr.update(interactive=False))
         updates.append(gr.update(interactive=False))
@@ -1738,7 +1738,8 @@ def handle_ocr_method_change(
         updates.append(
             gr.update(value=restored_send_full_page_context, interactive=True)
         )
-        updates.append(gr.update(interactive=True))
+        restored_whiteout = saved_settings.get("whiteout_conjoined_bubbles", True)
+        updates.append(gr.update(value=restored_whiteout, interactive=True))
         updates.append(gr.update(interactive=True))
         updates.append(gr.update(interactive=True))
         updates.append(gr.update(interactive=True))
