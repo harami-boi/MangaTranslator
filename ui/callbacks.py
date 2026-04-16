@@ -1738,8 +1738,7 @@ def handle_ocr_method_change(
         updates.append(
             gr.update(value=restored_send_full_page_context, interactive=True)
         )
-        updates.append(gr.update())
-        # Restore code execution checkbox interactivity
+        updates.append(gr.update(interactive=True))
         updates.append(gr.update(interactive=True))
         updates.append(gr.update(interactive=True))
         updates.append(gr.update(interactive=True))
