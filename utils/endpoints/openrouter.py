@@ -116,7 +116,8 @@ def call_openrouter_endpoint(
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://github.com/meangrinch/MangaTranslator",
-        "X-Title": "MangaTranslator",
+        "X-OpenRouter-Title": "MangaTranslator",
+        "X-OpenRouter-Categories": "writing-assistant,image-gen",
     }
 
     messages = []
