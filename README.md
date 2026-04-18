@@ -236,6 +236,7 @@ python main.py --help
 
 ## Documentation
 
+- [Hardware Requirements](docs/HARDWARE_REQUIREMENTS.md)
 - [Recommended Fonts](docs/FONTS.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
