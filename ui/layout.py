@@ -648,6 +648,7 @@ def create_layout(
                                 value=initial_provider_value,
                                 elem_id="provider_selector",
                             )
+                            provider_state = gr.State(value=initial_provider_value)
                             google_api_key = gr.Textbox(
                                 label="Google AI Studio API Key",
                                 placeholder="Enter Google AI Studio API key (starts with AI...)",
@@ -2214,6 +2215,13 @@ def create_layout(
         )
 
         provider_selector.change(
+            fn=lambda x: x,
+            inputs=provider_selector,
+            outputs=provider_state,
+            queue=False,
+        )
+
+        provider_selector.change(
             fn=callbacks.handle_provider_change,
             inputs=[provider_selector, temperature, ocr_method_radio],
             outputs=[
@@ -2494,7 +2502,7 @@ def create_layout(
                 original_language_state,
                 batch_input_language,
                 batch_original_language_state,
-                provider_selector,
+                provider_state,
                 config_model_name,
                 openai_compatible_url_input,
                 openai_compatible_api_key_input,
