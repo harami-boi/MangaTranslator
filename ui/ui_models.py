@@ -411,6 +411,9 @@ class UIConfigState:
                 bbox_expansion_percent=data.get(
                     "outside_text_bbox_expansion_percent", 0.1
                 ),
+                osb_render_expansion_multiplier=data.get(
+                    "outside_text_osb_render_expansion_multiplier", 1.0
+                ),
                 text_box_proximity_ratio=data.get(
                     "outside_text_text_box_proximity_ratio", 0.02
                 ),

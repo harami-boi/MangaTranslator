@@ -219,6 +219,7 @@ DEFAULT_SETTINGS = {
     "outside_text_page_filter_margin_threshold": 0.1,
     "outside_text_page_filter_min_area_ratio": 0.05,
     "outside_text_bbox_expansion_percent": 0.1,
+    "outside_text_osb_render_expansion_multiplier": 1.0,
     "outside_text_osb_font_pack": "",
     "outside_text_osb_max_font_size": 64,
     "outside_text_osb_min_font_size": 10,
