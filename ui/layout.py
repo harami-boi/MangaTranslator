@@ -1159,19 +1159,19 @@ def create_layout(
                                 "(must be supported by the font).",
                             )
                             gr.Markdown("### Text Layout")
-                            hyphenate_before_scaling = gr.Checkbox(
-                                value=saved_settings.get(
-                                    "hyphenate_before_scaling", True
-                                ),
-                                label="Hyphenate Long Words",
-                                info="Try inserting hyphens when wrapping before reducing font size.",
-                            )
                             detach_trailing_ellipsis = gr.Checkbox(
                                 value=saved_settings.get(
                                     "detach_trailing_ellipsis", True
                                 ),
                                 label="Detach Trailing Ellipsis",
                                 info="Move trailing '...' onto a new line for better text wrapping.",
+                            )
+                            hyphenate_before_scaling = gr.Checkbox(
+                                value=saved_settings.get(
+                                    "hyphenate_before_scaling", True
+                                ),
+                                label="Hyphenate Long Words",
+                                info="Try inserting hyphens when wrapping before reducing font size.",
                             )
                             hyphen_penalty = gr.Slider(
                                 100,
