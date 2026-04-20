@@ -648,7 +648,9 @@ def create_layout(
                                 value=initial_provider_value,
                                 elem_id="provider_selector",
                             )
-                            provider_state = gr.State(value=initial_provider_value)
+                            provider_state = gr.State(
+                                value=initial_provider_value,
+                            )
                             google_api_key = gr.Textbox(
                                 label="Google AI Studio API Key",
                                 placeholder="Enter Google AI Studio API key (starts with AI...)",
@@ -2215,13 +2217,6 @@ def create_layout(
         )
 
         provider_selector.change(
-            fn=lambda x: x,
-            inputs=provider_selector,
-            outputs=provider_state,
-            queue=False,
-        )
-
-        provider_selector.change(
             fn=callbacks.handle_provider_change,
             inputs=[provider_selector, temperature, ocr_method_radio],
             outputs=[
@@ -2268,6 +2263,14 @@ def create_layout(
             ],
             outputs=[config_model_name],
             queue=True,  # Allow fetching to happen in the background
+        )
+
+        # Keep provider_state in sync with provider_selector for manual changes
+        provider_selector.change(
+            fn=lambda p: p,
+            inputs=[provider_selector],
+            outputs=[provider_state],
+            queue=False,
         )
 
         config_model_name.change(
@@ -2520,6 +2523,7 @@ def create_layout(
                 media_resolution_bubbles_dropdown,
                 media_resolution_context_dropdown,
                 config_model_name,
+                provider_state,
             ],
             queue=False,
         )

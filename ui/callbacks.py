@@ -1587,17 +1587,17 @@ def handle_ocr_method_change(
         updates.append(gr.update(interactive=False))
 
         # Trigger model list refresh for providers with dynamic model lists
-        if provider == "OpenRouter":
+        if current_provider == "OpenRouter":
             model_update = utils.fetch_and_update_openrouter_models(
                 ocr_method="manga-ocr", current_model=current_model
             )
             updates.append(model_update)
-        elif provider == "OpenAI-Compatible":
+        elif current_provider == "OpenAI-Compatible":
             model_update = utils.fetch_and_update_compatible_models(
                 openai_compatible_url, openai_compatible_api_key, current_model
             )
             updates.append(model_update)
-        elif provider == "Z.ai":
+        elif current_provider == "Z.ai":
             # For manga-ocr mode, show all Z.ai models (text-only models work)
             models = settings_manager.PROVIDER_MODELS.get("Z.ai", [])
             saved_settings = settings_manager.get_saved_settings()
@@ -1611,7 +1611,7 @@ def handle_ocr_method_change(
                 else (models[0] if models else None)
             )
             updates.append(gr.update(choices=models, value=selected_model))
-        elif provider == "Moonshot AI":
+        elif current_provider == "Moonshot AI":
             # For manga-ocr mode, show all Moonshot AI models (text-only models work)
             models = settings_manager.PROVIDER_MODELS.get("Moonshot AI", [])
             saved_settings = settings_manager.get_saved_settings()
@@ -1666,17 +1666,17 @@ def handle_ocr_method_change(
         updates.append(gr.update(interactive=False))
 
         # Model list refresh — same as manga-ocr (enables text-only providers)
-        if provider == "OpenRouter":
+        if current_provider == "OpenRouter":
             model_update = utils.fetch_and_update_openrouter_models(
                 ocr_method="manga-ocr", current_model=current_model
             )
             updates.append(model_update)
-        elif provider == "OpenAI-Compatible":
+        elif current_provider == "OpenAI-Compatible":
             model_update = utils.fetch_and_update_compatible_models(
                 openai_compatible_url, openai_compatible_api_key, current_model
             )
             updates.append(model_update)
-        elif provider == "Z.ai":
+        elif current_provider == "Z.ai":
             models = settings_manager.PROVIDER_MODELS.get("Z.ai", [])
             saved_settings = settings_manager.get_saved_settings()
             provider_models_dict = saved_settings.get(
@@ -1689,7 +1689,7 @@ def handle_ocr_method_change(
                 else (models[0] if models else None)
             )
             updates.append(gr.update(choices=models, value=selected_model))
-        elif provider == "Moonshot AI":
+        elif current_provider == "Moonshot AI":
             models = settings_manager.PROVIDER_MODELS.get("Moonshot AI", [])
             saved_settings = settings_manager.get_saved_settings()
             provider_models_dict = saved_settings.get(
@@ -1746,17 +1746,17 @@ def handle_ocr_method_change(
         updates.append(gr.update(interactive=True))
 
         # Trigger model list refresh for providers with dynamic or filtered model lists
-        if provider == "OpenRouter":
+        if current_provider == "OpenRouter":
             model_update = utils.fetch_and_update_openrouter_models(
                 ocr_method="LLM", current_model=current_model
             )
             updates.append(model_update)
-        elif provider == "OpenAI-Compatible":
+        elif current_provider == "OpenAI-Compatible":
             model_update = utils.fetch_and_update_compatible_models(
                 openai_compatible_url, openai_compatible_api_key, current_model
             )
             updates.append(model_update)
-        elif provider == "Z.ai":
+        elif current_provider == "Z.ai":
             # For LLM OCR mode, only show Z.ai vision models
             models = [
                 m for m in settings_manager.PROVIDER_MODELS.get("Z.ai", []) if "v" in m
@@ -1772,7 +1772,7 @@ def handle_ocr_method_change(
                 else (models[0] if models else None)
             )
             updates.append(gr.update(choices=models, value=selected_model))
-        elif provider == "Moonshot AI":
+        elif current_provider == "Moonshot AI":
             # For LLM OCR mode, only show Moonshot vision models
             all_models = settings_manager.PROVIDER_MODELS.get("Moonshot AI", [])
             models = [m for m in all_models if "kimi-k2.5" in m.lower()]
@@ -1789,6 +1789,8 @@ def handle_ocr_method_change(
             updates.append(gr.update(choices=models, value=selected_model))
         else:
             updates.append(gr.update())
+
+    updates.append(current_provider)
 
     return updates
 
