@@ -1775,7 +1775,7 @@ def handle_ocr_method_change(
         elif current_provider == "Moonshot AI":
             # For LLM OCR mode, only show Moonshot vision models
             all_models = settings_manager.PROVIDER_MODELS.get("Moonshot AI", [])
-            models = [m for m in all_models if "kimi-k2.5" in m.lower()]
+            models = [m for m in all_models if "kimi-k2." in m.lower()]
             saved_settings = settings_manager.get_saved_settings()
             provider_models_dict = saved_settings.get(
                 "provider_models", settings_manager.DEFAULT_SETTINGS["provider_models"]

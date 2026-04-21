@@ -75,6 +75,9 @@ def get_max_tokens_cap(provider: str, model_name: Optional[str]) -> Optional[int
             return 23552
         if model_lower == "glm-4.5v":
             return 16384
+    elif provider == "Moonshot AI":
+        if "kimi-k2." in model_lower:
+            return 32768
 
     return None
 
@@ -182,13 +185,11 @@ def is_anthropic_reasoning_model(model_name: Optional[str]) -> bool:
 def is_moonshot_reasoning_model(model_name: Optional[str]) -> bool:
     """Check if a Moonshot model is reasoning-capable.
 
-    Kimi-k2-thinking/turbo and kimi-k2.5 are reasoning models,
-    though their reasoning cannot be controlled via reasoning_effort.
+    All kimi-k2.X models default to thinking enabled.
     """
     if not model_name:
         return False
-    lm = model_name.lower()
-    return "thinking" in lm or "kimi-k2.5" in lm
+    return "kimi-k2." in model_name.lower()
 
 
 def is_opus_45_model(model_name: Optional[str]) -> bool:

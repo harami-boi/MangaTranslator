@@ -22,7 +22,7 @@ def call_moonshot_endpoint(
 ) -> Optional[str]:
     """
     Calls the Moonshot AI (Kimi) API endpoint with the provided data and handles retries.
-    Moonshot uses OpenAI-compatible API format. Kimi-K2.5 supports multimodal inputs and hybrid reasoning.
+    Moonshot uses OpenAI-compatible API format. Kimi K2.X models support multimodal inputs and hybrid reasoning.
 
     Args:
         api_key (str): Moonshot API key.
@@ -58,7 +58,7 @@ def call_moonshot_endpoint(
         )
 
     model_lower = model_name.lower()
-    is_multimodal = "kimi-k2.5" in model_lower
+    is_multimodal = "kimi-k2." in model_lower
 
     if is_multimodal:
         content_list = []

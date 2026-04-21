@@ -569,9 +569,7 @@ def get_reasoning_effort_config(
         return True, ["auto", "none"], "auto"
 
     elif provider == "Moonshot AI":
-        # Moonshot AI kimi-k2.5 supports reasoning control via the 'thinking' parameter.
-        # Older models have always-on reasoning.
-        if "kimi-k2.5" in lm:
+        if "kimi-k2." in lm:
             return True, ["high", "none"], "high"
         return False, [], None
 
@@ -716,7 +714,7 @@ def update_translation_ui(provider: str, _current_temp: float, ocr_method: str =
     if provider == "Z.ai" and ocr_method == "LLM":
         models = [m for m in models if "v" in m]
     elif provider == "Moonshot AI" and ocr_method == "LLM":
-        models = [m for m in models if "kimi-k2.5" in m.lower()]
+        models = [m for m in models if "kimi-k2." in m.lower()]
 
     selected_model = (
         remembered_model
@@ -831,7 +829,7 @@ def update_translation_ui(provider: str, _current_temp: float, ocr_method: str =
         info=mr_context_info, **mr_update_kwargs
     )
 
-    # Moonshot AI: reasoning effort is visible for kimi-k2.5 models
+    # Moonshot AI: reasoning effort is visible for kimi-k2.X models
     reasoning_effort_visible, reasoning_choices, reasoning_default_value = (
         get_reasoning_effort_config(provider, remembered_model)
     )

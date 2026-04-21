@@ -771,7 +771,7 @@ def main():
         api_key = args.moonshot_api_key or os.environ.get("MOONSHOT_API_KEY")
         api_key_arg_name = "--moonshot-api-key"
         api_key_env_var = "MOONSHOT_API_KEY"
-        default_model = "kimi-k2.5"
+        default_model = "kimi-k2.6"
     elif provider == "OpenRouter":
         api_key = args.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
         api_key_arg_name = "--openrouter-api-key"
