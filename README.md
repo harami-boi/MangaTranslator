@@ -178,7 +178,7 @@ If you want to use the OSB text pipeline, you need a Hugging Face token with acc
 2. Visit and accept the terms on:
    - [AnimeText_yolo](https://huggingface.co/deepghs/AnimeText_yolo)
    - [FLUX.1 Kontext (dev)](https://huggingface.co/black-forest-labs/FLUX.1-Kontext-dev) (optional, if using Kontext with Nunchaku)
-   - [SAM 3](https://huggingface.co/facebook/sam3) (optional, if using SAM 3 instead of SAM 2.1)
+   - [SAM 3](https://huggingface.co/facebook/sam3) (optional, if using SAM 3)
 3. Create a new access token in your Hugging Face settings with read access to gated repos ("Read access to contents of public gated repos")
 4. Add the token to the app:
    - Web UI: set `hf_token` in Config
