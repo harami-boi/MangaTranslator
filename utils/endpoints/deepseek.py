@@ -27,7 +27,8 @@ def call_deepseek_endpoint(
         api_key (str): DeepSeek API key.
         model_name (str): DeepSeek model to use.
         parts (List[Dict[str, Any]]): List of content parts (text only, images are ignored).
-        generation_config (Dict[str, Any]): Configuration for generation (temp, top_p, max_tokens).
+        generation_config (Dict[str, Any]): Configuration for generation (temp, top_p, max_tokens,
+            thinking, reasoning_effort).
         system_prompt (Optional[str]): System prompt for the conversation.
         debug (bool): Whether to print debugging information.
         timeout (int): Request timeout in seconds.
@@ -53,7 +54,7 @@ def call_deepseek_endpoint(
             "Invalid 'parts' format for DeepSeek: No text prompt found."
         )
 
-    url = "https://api.deepseek.com/v1/chat/completions"
+    url = "https://api.deepseek.com/chat/completions"
     api_model_name = model_name
 
     headers = {
@@ -72,13 +73,25 @@ def call_deepseek_endpoint(
         "max_tokens": generation_config.get("max_tokens", 4096),
     }
 
-    temp = generation_config.get("temperature")
-    if temp is not None:
-        payload["temperature"] = min(temp, 2.0)  # DeepSeek supports up to 2.0
+    # Add thinking parameter if present
+    thinking_config = generation_config.get("thinking")
+    thinking_enabled = thinking_config and thinking_config.get("type") == "enabled"
+    if thinking_config:
+        payload["thinking"] = thinking_config
 
-    top_p = generation_config.get("top_p")
-    if top_p is not None:
-        payload["top_p"] = top_p
+    reasoning_effort = generation_config.get("reasoning_effort")
+    if reasoning_effort:
+        payload["reasoning_effort"] = reasoning_effort
+
+    # Thinking mode does not support temperature/top_p (no error, but no effect)
+    if not thinking_enabled:
+        temp = generation_config.get("temperature")
+        if temp is not None:
+            payload["temperature"] = min(temp, 2.0)
+
+        top_p = generation_config.get("top_p")
+        if top_p is not None:
+            payload["top_p"] = top_p
 
     payload = {k: v for k, v in payload.items() if v is not None}
 
@@ -150,11 +163,15 @@ def call_deepseek_endpoint(
                         f"Rate limited after {max_retries + 1} attempts: {error_text}"
                     )
                 elif status_code == 400:
-                    error_reason += " (Check payload)"
+                    error_reason += " (Invalid request format)"
                 elif status_code == 401:
                     error_reason += " (Check API key)"
+                elif status_code == 402:
+                    error_reason += " (Insufficient balance, top up your account)"
                 elif status_code == 403:
                     error_reason += " (Permission denied, check API key/plan)"
+                elif status_code == 422:
+                    error_reason += " (Invalid parameters)"
 
                 raise TranslationError(
                     f"DeepSeek API HTTP Error: {error_reason}"

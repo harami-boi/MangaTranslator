@@ -11,7 +11,6 @@ def get_max_tokens_cap(provider: str, model_name: Optional[str]) -> Optional[int
         - 16384 for OpenAI GPT 4o models and models with "chat" in the name
         - 31744 for Anthropic Claude Opus 4/4.1 models (not 4.5/4.6/4.7)
         - 29696 for xAI Grok fast models
-        - 8192 for DeepSeek "deepseek-chat" model (not including via OpenRouter)
         - 23552 for Z.ai "glm-4.6v" model
         - 16384 for Z.ai "glm-4.5v" model
         - None for all other models (no cap, use existing 63488 max)
@@ -67,9 +66,6 @@ def get_max_tokens_cap(provider: str, model_name: Optional[str]) -> Optional[int
             return 23552
         if "glm-4.5v" in model_lower:
             return 16384
-    elif provider == "DeepSeek":
-        if model_lower == "deepseek-chat":
-            return 8192
     elif provider == "Z.ai":
         if model_lower == "glm-4.6v":
             return 23552
@@ -144,7 +140,7 @@ def is_deepseek_reasoning_model(model_name: Optional[str]) -> bool:
     if not model_name:
         return False
     lm = model_name.lower()
-    return lm == "deepseek-reasoner"
+    return lm in ("deepseek-v4-pro", "deepseek-v4-flash")
 
 
 def is_zai_reasoning_model(model_name: Optional[str]) -> bool:

@@ -418,6 +418,10 @@ def get_reasoning_effort_info_text(
         return "Controls model's internal reasoning effort."
     elif provider == "Moonshot AI":
         return "Enables or disables model thinking (high=enabled, none=disabled)."
+    elif provider == "DeepSeek":
+        return (
+            "Controls thinking mode (high=default, max=deep reasoning, none=disabled)."
+        )
     elif provider == "Z.ai":
         return "Enables or disables model thinking (auto=enabled, none=disabled)."
     elif provider == "OpenRouter" and model_name:
@@ -559,7 +563,7 @@ def get_reasoning_effort_config(
         is_reasoning = is_deepseek_reasoning_model(model_name)
         if not is_reasoning:
             return False, [], None
-        return True, ["high", "medium", "low"], "high"
+        return True, ["max", "high", "none"], "high"
 
     elif provider == "Z.ai":
         is_reasoning = is_zai_reasoning_model(model_name)

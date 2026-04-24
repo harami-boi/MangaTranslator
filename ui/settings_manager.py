@@ -78,8 +78,8 @@ PROVIDER_MODELS: Dict[str, List[str]] = {
         "grok-4-0709",
     ],
     "DeepSeek": [
-        "deepseek-chat",
-        "deepseek-reasoner",
+        "deepseek-v4-pro",
+        "deepseek-v4-flash",
     ],
     "Z.ai": [
         "glm-5.1",
@@ -513,7 +513,6 @@ def get_saved_settings() -> Dict[str, Any]:
             if (
                 loaded_provider == "OpenRouter"
                 or loaded_provider == "OpenAI-Compatible"
-                or loaded_provider == "DeepSeek"
             ):
                 settings["model_name"] = saved_model_for_provider
             else:
@@ -556,7 +555,6 @@ def get_saved_settings() -> Dict[str, Any]:
         if (
             default_provider != "OpenRouter"
             and default_provider != "OpenAI-Compatible"
-            and default_provider != "DeepSeek"
         ):
             valid_models = PROVIDER_MODELS.get(default_provider, [])
             settings["model_name"] = valid_models[0] if valid_models else None
@@ -571,7 +569,6 @@ def get_saved_settings() -> Dict[str, Any]:
         if (
             default_provider != "OpenRouter"
             and default_provider != "OpenAI-Compatible"
-            and default_provider != "DeepSeek"
         ):
             valid_models = PROVIDER_MODELS.get(default_provider, [])
             settings["model_name"] = valid_models[0] if valid_models else None

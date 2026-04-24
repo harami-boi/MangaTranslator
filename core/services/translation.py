@@ -416,6 +416,12 @@ def _build_generation_config(
             "top_p": top_p,
             "max_tokens": max_tokens_value,
         }
+        if is_reasoning:
+            reasoning_effort = config.reasoning_effort or "high"
+            thinking_type = "enabled" if reasoning_effort != "none" else "disabled"
+            generation_config["thinking"] = {"type": thinking_type}
+            if thinking_type == "enabled":
+                generation_config["reasoning_effort"] = reasoning_effort
         return generation_config
 
     elif provider == "Z.ai":
