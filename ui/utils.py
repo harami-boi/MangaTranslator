@@ -658,8 +658,13 @@ def get_sampling_interactivity_for_effort(
 
     For GPT-5 series (non-chat): only allowed when effort is 'none' or 'minimal'.
     For other OpenAI reasoning models (o1, o3, o4-mini): never allowed.
+    For DeepSeek reasoning models: only allowed when effort is 'none'.
     Returns (temp_interactive, top_p_interactive).
     """
+    if provider == "DeepSeek" and is_deepseek_reasoning_model(model_name):
+        allow = reasoning_effort == "none"
+        return allow, allow
+
     if provider not in ("OpenAI", "OpenRouter"):
         return True, True
 
