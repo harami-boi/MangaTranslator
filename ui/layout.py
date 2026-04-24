@@ -403,6 +403,24 @@ def create_layout(
                             batch_cancel_button = gr.Button(
                                 "Cancel", variant="stop", visible=False
                             )
+                        with gr.Row(visible=False) as batch_download_row:
+                            batch_download_cbz_button = gr.Button(
+                                "📦 Download All as CBZ",
+                                variant="secondary",
+                                elem_id="batch_download_cbz",
+                            )
+                            batch_download_zip_button = gr.Button(
+                                "📁 Download All as ZIP",
+                                variant="secondary",
+                                elem_id="batch_download_zip",
+                            )
+                        batch_download_file = gr.File(
+                            label="Download",
+                            visible=False,
+                            interactive=False,
+                            elem_id="batch_download_file",
+                        )
+                        batch_output_path_state = gr.State(value="")
 
             with gr.TabItem("Config", elem_id="settings-tab-container"):
                 config_initial_provider = initial_provider
@@ -1726,6 +1744,45 @@ def create_layout(
                                     or saved_settings.get("upscaling_only", False)
                                 ),
                             )
+                            
+                            gr.Markdown("### Import Raw Settings")
+                            import_config_text = gr.Textbox(
+                                label="Paste raw config.json text here",
+                                lines=5,
+                                max_lines=10,
+                                placeholder="{\n  \"provider\": \"OpenRouter\",\n  ..."
+                            )
+                            apply_config_btn = gr.Button(
+                                "Import & Save Config", 
+                                variant="primary", 
+                                elem_classes="config-button"
+                            )
+                            import_status = gr.Textbox(label="Import Status", interactive=False)
+                            
+                            def handle_import_config_click(text):
+                                import json
+                                from ui import settings_manager
+                                try:
+                                    # Strip outside whitespace/backticks in case users copy-paste markdown blocks
+                                    text = text.strip()
+                                    if text.startswith("```json"):
+                                        text = text[7:]
+                                    if text.startswith("```"):
+                                        text = text[3:]
+                                    if text.endswith("```"):
+                                        text = text[:-3]
+                                        
+                                    data = json.loads(text.strip())
+                                    msg = settings_manager.save_config(data)
+                                    return f"✅ Success ({msg})\n\nIMPORTANT: Please refresh your browser tab (F5) to visually load these new settings!"
+                                except Exception as e:
+                                    return f"❌ Error importing JSON: {str(e)}"
+                                    
+                            apply_config_btn.click(
+                                fn=handle_import_config_click, 
+                                inputs=[import_config_text], 
+                                outputs=[import_status]
+                            )
                         setting_groups.append(group_other)
 
         # --- Define Event Handlers ---
@@ -2592,12 +2649,23 @@ def create_layout(
             queue=False,
         ).then(fn=None, js=js_reset_status_height, queue=False)
         batch_clear_button.click(
-            fn=lambda: (None, None, None, gr.update(value="", lines=1)),
+            fn=lambda: (
+                None,
+                None,
+                None,
+                gr.update(value="", lines=1),
+                gr.update(visible=False),
+                gr.update(visible=False, value=None),
+                "",
+            ),
             outputs=[
                 input_files,
                 input_zip,
                 batch_output_gallery,
                 batch_status_message,
+                batch_download_row,
+                batch_download_file,
+                batch_output_path_state,
             ],
             queue=False,
         ).then(fn=None, js=js_reset_status_height, queue=False)
@@ -2651,14 +2719,23 @@ def create_layout(
             queue=False,
         )
 
-        # Batch Tab Button
+        # Batch Tab Button — hide download components when starting a new batch
+        def _hide_downloads_on_batch_start(*args):
+            return (
+                callbacks.update_process_buttons(
+                    processing=True,
+                    button_text_processing="Processing...",
+                    button_text_idle="Start Batch Translating",
+                )
+                + (
+                    gr.update(visible=False),
+                    gr.update(visible=False, value=None),
+                    "",
+                )
+            )
+
         batch_event = batch_process_button.click(
-            fn=functools.partial(
-                callbacks.update_process_buttons,
-                processing=True,
-                button_text_processing="Processing...",
-                button_text_idle="Start Batch Translating",
-            ),
+            fn=_hide_downloads_on_batch_start,
             outputs=[
                 batch_process_button,
                 batch_clear_button,
@@ -2666,6 +2743,9 @@ def create_layout(
                 translate_button,
                 clear_button,
                 cancel_button,
+                batch_download_row,
+                batch_download_file,
+                batch_output_path_state,
             ],
             queue=False,
         ).then(
@@ -2676,7 +2756,7 @@ def create_layout(
                 target_device=target_device,
             ),
             inputs=batch_inputs,
-            outputs=[batch_output_gallery, batch_status_message],
+            outputs=[batch_output_gallery, batch_status_message, batch_output_path_state],
         )
         batch_event.then(
             fn=functools.partial(
@@ -2699,6 +2779,41 @@ def create_layout(
         batch_cancel_button.click(
             fn=callbacks.cancel_process,
             cancels=batch_event,
+            queue=False,
+        )
+
+        # --- Batch Download Buttons ---
+        # Show download row after batch completes if there are results
+        batch_event.then(
+            fn=lambda output_path_str: gr.update(
+                visible=bool(output_path_str)
+            ),
+            inputs=[batch_output_path_state],
+            outputs=[batch_download_row],
+            queue=False,
+        )
+
+        batch_download_cbz_button.click(
+            fn=callbacks.handle_download_cbz,
+            inputs=[batch_output_path_state],
+            outputs=[batch_download_file],
+            queue=False,
+        ).then(
+            fn=lambda f: gr.update(visible=f is not None),
+            inputs=[batch_download_file],
+            outputs=[batch_download_file],
+            queue=False,
+        )
+
+        batch_download_zip_button.click(
+            fn=callbacks.handle_download_zip,
+            inputs=[batch_output_path_state],
+            outputs=[batch_download_file],
+            queue=False,
+        ).then(
+            fn=lambda f: gr.update(visible=f is not None),
+            inputs=[batch_download_file],
+            outputs=[batch_download_file],
             queue=False,
         )
 

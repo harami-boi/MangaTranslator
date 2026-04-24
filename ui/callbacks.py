@@ -1,7 +1,11 @@
+import os
 import re
+import tempfile
 import time
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from xml.etree.ElementTree import Element, SubElement, tostring
 
 import gradio as gr
 import torch
@@ -754,7 +758,7 @@ def handle_batch_click(
     fonts_base_dir: Path,
     target_device: Optional[torch.device],
     progress=gr.Progress(track_tqdm=True),
-) -> Tuple[List[str], str]:
+) -> Tuple[List[str], str, str]:
     """Callback for the 'Start Batch Translating' button click. Uses dataclasses."""
     input_files = args[0]
     input_zip = args[1] if len(args) > 1 else None
@@ -843,21 +847,21 @@ def handle_batch_click(
             results, backend_config, font_dir_path
         )
         progress(1.0, desc="Batch complete!")
-        return gallery_images, _status_update(status_msg)
+        return gallery_images, _status_update(status_msg), str(output_path)
 
     except gr.Error as e:
         progress(1.0, desc="Error occurred")
         cleaned = _clean_error_message(e)
         gr.Error(cleaned)
-        return None, _status_update(cleaned)
+        return None, _status_update(cleaned), ""
     except CancellationError:
         progress(1.0, desc="Cancelled")
-        return None, _status_update("Batch process cancelled by user.")
+        return None, _status_update("Batch process cancelled by user."), ""
     except (ValidationError, FileNotFoundError, ValueError, logic.LogicError) as e:
         progress(1.0, desc="Error occurred")
         cleaned = _clean_error_message(e)
         gr.Error(cleaned)
-        return None, _status_update(cleaned)
+        return None, _status_update(cleaned), ""
     except Exception as e:
         progress(1.0, desc="Error occurred")
         import traceback
@@ -867,7 +871,7 @@ def handle_batch_click(
             f"An unexpected error occurred during batch processing: {str(e)}"
         )
         gr.Error(cleaned)
-        return None, _status_update(cleaned)
+        return None, _status_update(cleaned), ""
 
 
 def handle_save_config_click(*args: Any) -> str:
@@ -1806,3 +1810,146 @@ def handle_translation_mode_change(translation_mode: str, current_ocr_method: st
             return gr.update(interactive=False)
     else:
         return gr.update(interactive=True)
+
+
+def _generate_comic_info_xml(
+    title: str,
+    page_count: int,
+    language: str = "en",
+    reading_direction: str = "rtl",
+) -> bytes:
+    """Generate a ComicInfo.xml for CBZ metadata.
+
+    This follows the ComicInfo schema used by most manga/comic readers
+    (Tachiyomi, Mihon, Kavita, Komga, CDisplayEx, etc.).
+    """
+    root = Element("ComicInfo")
+    root.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
+    root.set("xmlns:xsd", "http://www.w3.org/2001/XMLSchema")
+
+    SubElement(root, "Title").text = title
+    SubElement(root, "PageCount").text = str(page_count)
+    SubElement(root, "LanguageISO").text = language
+    # "YesAndRightToLeft" tells readers this is manga (RTL reading)
+    manga_value = "YesAndRightToLeft" if reading_direction == "rtl" else "No"
+    SubElement(root, "Manga").text = manga_value
+    SubElement(root, "Notes").text = "Translated by MangaTranslator"
+
+    return b'<?xml version="1.0" encoding="utf-8"?>\n' + tostring(
+        root, encoding="unicode"
+    ).encode("utf-8")
+
+
+def _collect_output_images(output_path: Path) -> list[Path]:
+    """Collect and naturally sort all image files from the output directory."""
+    image_extensions = {".jpg", ".jpeg", ".png", ".webp"}
+    files = [
+        f
+        for f in output_path.rglob("*.*")
+        if f.is_file() and f.suffix.lower() in image_extensions
+    ]
+    # Natural sort: page_1, page_2, ..., page_10
+    files.sort(
+        key=lambda x: tuple(
+            int(part) if part.isdigit() else part
+            for part in re.split(r"(\d+)", x.stem)
+        )
+    )
+    return files
+
+
+def handle_download_cbz(
+    output_path_str: str,
+) -> Optional[str]:
+    """Package batch output as a CBZ (Comic Book Zip) file.
+
+    CBZ is the universal manga/comic format readable by all manga readers.
+    Images are zero-padded for correct page ordering and a ComicInfo.xml
+    is included for metadata support.
+    """
+    if not output_path_str:
+        gr.Warning("No batch output available. Run batch translation first.")
+        return None
+
+    output_path = Path(output_path_str)
+    if not output_path.exists() or not output_path.is_dir():
+        gr.Warning("Output directory not found. Run batch translation again.")
+        return None
+
+    image_files = _collect_output_images(output_path)
+    if not image_files:
+        gr.Warning("No translated images found in output directory.")
+        return None
+
+    # Determine title from the output folder name
+    title = f"MangaTranslator_{output_path.name}"
+
+    # Create CBZ in a temp directory
+    temp_dir = tempfile.mkdtemp()
+    cbz_path = os.path.join(temp_dir, f"{title}.cbz")
+
+    try:
+        with zipfile.ZipFile(cbz_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Add ComicInfo.xml
+            comic_info = _generate_comic_info_xml(
+                title=title,
+                page_count=len(image_files),
+            )
+            zf.writestr("ComicInfo.xml", comic_info)
+
+            # Add images with zero-padded filenames for correct page ordering
+            pad_width = len(str(len(image_files)))
+            if pad_width < 3:
+                pad_width = 3  # Minimum 3 digits: 001, 002, ...
+
+            for idx, img_file in enumerate(image_files, start=1):
+                ext = img_file.suffix.lower()
+                archive_name = f"{str(idx).zfill(pad_width)}{ext}"
+                zf.write(img_file, archive_name)
+
+        return cbz_path
+
+    except Exception as e:
+        gr.Warning(f"Failed to create CBZ: {str(e)}")
+        return None
+
+
+def handle_download_zip(
+    output_path_str: str,
+) -> Optional[str]:
+    """Package batch output as a standard ZIP archive.
+
+    Preserves original filenames and directory structure from the
+    batch translation output.
+    """
+    if not output_path_str:
+        gr.Warning("No batch output available. Run batch translation first.")
+        return None
+
+    output_path = Path(output_path_str)
+    if not output_path.exists() or not output_path.is_dir():
+        gr.Warning("Output directory not found. Run batch translation again.")
+        return None
+
+    image_files = _collect_output_images(output_path)
+    if not image_files:
+        gr.Warning("No translated images found in output directory.")
+        return None
+
+    title = f"MangaTranslator_{output_path.name}"
+
+    temp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(temp_dir, f"{title}.zip")
+
+    try:
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for img_file in image_files:
+                # Preserve relative path from output directory
+                rel_path = img_file.relative_to(output_path)
+                zf.write(img_file, str(rel_path))
+
+        return zip_path
+
+    except Exception as e:
+        gr.Warning(f"Failed to create ZIP: {str(e)}")
+        return None
