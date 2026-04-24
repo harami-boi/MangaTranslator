@@ -24,6 +24,7 @@ from utils.exceptions import (
     TranslationError,
 )
 from utils.logging import log_message
+from core.rotator import RotatorSession, translate_with_retry
 
 from .image.cleaning import clean_speech_bubbles, retry_cleaning_with_otsu
 from .image.detection import detect_panels, detect_speech_bubbles
