@@ -61,10 +61,12 @@ if __name__ == "__main__":
         help="Automatically open in the default web browser",
     )
     parser.add_argument(
-        "--port", type=int, default=7676, help="Port number for the web UI"
+        "--share",
+        action="store_true",
+        help="Create a public Gradio share link",
     )
     parser.add_argument(
-        "--share", action="store_true", help="Create a public Gradio share link"
+        "--port", type=int, default=7676, help="Port number for the web UI"
     )
     parser.add_argument(
         "--cpu", action="store_true", help="Force CPU usage even if CUDA is available"
@@ -98,15 +100,6 @@ if __name__ == "__main__":
     print(f"PyTorch version: {torch.__version__}")
     print(f"MangaTranslator version: v{core.__version__}")
 
-    # Initialize API key rotator from api_keys.txt (if it exists)
-    try:
-        from utils.api_key_rotator import load_api_keys
-
-        rotator = load_api_keys(keys_file="api_keys.txt")
-        print(f"API key rotation enabled: {rotator.key_count} keys loaded")
-    except (ValueError, FileNotFoundError):
-        pass  # No api_keys.txt or no keys — single-key mode via UI
-
     def _update_notice():
         available, latest = check_for_update(
             core.__version__, repo="meangrinch/MangaTranslator", timeout=3.0
@@ -123,9 +116,4 @@ if __name__ == "__main__":
     )
 
     app.queue()
-    app.launch(
-        inbrowser=args.open_browser,
-        server_port=args.port,
-        show_error=True,
-        share=args.share,
-    )
+    app.launch(inbrowser=args.open_browser, server_port=args.port, show_error=True, share=args.share)
