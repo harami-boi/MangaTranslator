@@ -619,6 +619,23 @@ def reset_to_defaults() -> Dict[str, Any]:
                 "outside_text_osb_font_pack"
             ]
 
+        outside_text_keys = [
+            "outside_text_enabled", "outside_text_inpainting_method",
+            "outside_text_flux_low_vram", "outside_text_flux_num_inference_steps",
+            "outside_text_flux_luminance_correction", "outside_text_flux_residual_diff_threshold",
+            "outside_text_seed", "outside_text_kontext_backend",
+            "outside_text_osb_confidence", "outside_text_enable_page_number_filtering",
+            "outside_text_page_filter_margin_threshold", "outside_text_page_filter_min_area_ratio",
+            "outside_text_bbox_expansion_percent", "outside_text_text_box_proximity_ratio",
+            "outside_text_osb_max_font_size", "outside_text_osb_min_font_size",
+            "outside_text_osb_use_ligatures", "outside_text_osb_outline_width",
+            "outside_text_osb_line_spacing", "outside_text_osb_use_subpixel_rendering",
+            "outside_text_osb_font_hinting",
+        ]
+        for key in outside_text_keys:
+            if key in current_saved:
+                settings[key] = current_saved[key]
+
         # Preserve provider and model selection if they exist
         if "provider" in current_saved:
             settings["provider"] = current_saved["provider"]

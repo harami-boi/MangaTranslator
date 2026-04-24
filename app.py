@@ -64,6 +64,9 @@ if __name__ == "__main__":
         "--port", type=int, default=7676, help="Port number for the web UI"
     )
     parser.add_argument(
+        "--share", action="store_true", help="Create a public Gradio share link"
+    )
+    parser.add_argument(
         "--cpu", action="store_true", help="Force CPU usage even if CUDA is available"
     )
     args = parser.parse_args()
@@ -120,4 +123,9 @@ if __name__ == "__main__":
     )
 
     app.queue()
-    app.launch(inbrowser=args.open_browser, server_port=args.port, show_error=True)
+    app.launch(
+        inbrowser=args.open_browser,
+        server_port=args.port,
+        show_error=True,
+        share=args.share,
+    )

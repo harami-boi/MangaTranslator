@@ -214,7 +214,7 @@ class MangaTranslatorConfig:
                 "OPENAI_COMPATIBLE_API_KEY", ""
             )
         if not self.outside_text.huggingface_token:
-            self.outside_text.huggingface_token = os.environ.get("HF_TOKEN", "")
+            self.outside_text.huggingface_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN", "")
 
         # Autodetect device if not specified
         if self.device is None:
