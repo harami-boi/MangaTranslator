@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from utils.api_key_rotator import get_rotator
 from utils.exceptions import TranslationError, ValidationError
 from utils.logging import log_message
 
@@ -147,6 +148,19 @@ def call_gemini_endpoint(
             error_text = e.response.text[:500]  # Limit error text length
 
             if status_code == 429 and attempt < max_retries:
+                # Try rotating to a different API key before retrying
+                rotator = get_rotator()
+                if rotator and rotator.key_count > 1:
+                    new_key = rotator.mark_rate_limited(api_key)
+                    if new_key and new_key != api_key:
+                        api_key = new_key
+                        # Rebuild URL with new key
+                        url = f"https://generativelanguage.googleapis.com/{api_version}/models/{model_name}:generateContent?key={api_key}"
+                        log_message(
+                            f"Rate limited, rotated API key and retrying immediately",
+                            verbose=debug,
+                        )
+                        continue
                 log_message(
                     f"Rate limited, retrying in {current_delay:.1f}s", verbose=debug
                 )

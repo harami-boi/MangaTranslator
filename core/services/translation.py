@@ -15,6 +15,7 @@ from core.image.ocr_detection import (
     extract_text_with_manga_ocr,
     extract_text_with_paddle_ocr_vl,
 )
+
 from utils.endpoints import (
     call_anthropic_endpoint,
     call_deepseek_endpoint,
@@ -553,7 +554,14 @@ def _call_llm_endpoint(
 
     try:
         if provider == "Google":
-            api_key = config.google_api_key
+            # Use rotator key if available, otherwise fall back to config key
+            from utils.api_key_rotator import get_rotator
+
+            rotator = get_rotator()
+            if rotator:
+                api_key = rotator.get_key()
+            else:
+                api_key = config.google_api_key
             if not api_key:
                 raise TranslationError("Google API key is missing.")
             generation_config = _build_generation_config(
