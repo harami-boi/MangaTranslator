@@ -1,7 +1,6 @@
 import threading
 import copy
 from pathlib import Path
-from core.pipeline import translate_and_render
 from utils.logging import log_message
 
 class RotatorSession:
@@ -106,6 +105,7 @@ def translate_with_retry(img_path, config, output_path, rotator, cancellation_ma
             local_config.translation.google_api_key = key
 
         try:
+            from core.pipeline import translate_and_render
             translate_and_render(img_path, local_config, output_path, cancellation_manager=cancellation_manager)
             return True
         except Exception as e:
