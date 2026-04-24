@@ -1558,21 +1558,19 @@ async def _batch_translate_parallel(
     results_lock = threading.Lock()
     cancelled = False
 
-    def _process_single(img_path: Path, index: int) -> Tuple[str, str]:
-        """Run translate_and_render for a single image. Returns (display_path, error_key)."""
+    def _process_single(img_path: Path, index: int, rotator_obj) -> Tuple[str, str, bool]:
         output_path, display_path, error_key = _resolve_output_path(
             img_path, input_dir, output_dir, config, preserve_structure
         )
-        log_message(
-            f"Processing {index + 1}/{total_images}: {display_path}",
-            always_print=True,
-        )
-        translate_and_render(
-            img_path, config, output_path, cancellation_manager=cancellation_manager
-        )
-        return display_path, error_key
+        if output_path.exists():
+            log_message(f"Skipping {index + 1}/{total_images}: {display_path} (Already exists)", always_print=True)
+            return display_path, error_key, True
+            
+        log_message(f"Processing {index + 1}/{total_images}: {display_path}", always_print=True)
+        translate_with_retry(img_path, config, output_path, rotator_obj, cancellation_manager=cancellation_manager, display_path=display_path)
+        return display_path, error_key, False
 
-    async def _worker(img_path: Path, index: int, executor: ThreadPoolExecutor):
+    async def _worker(img_path: Path, index: int, executor: ThreadPoolExecutor, rotator_obj):
         nonlocal completed_count, cancelled
         if cancelled or (cancellation_manager and cancellation_manager.is_cancelled()):
             cancelled = True
@@ -1587,11 +1585,13 @@ async def _batch_translate_parallel(
 
             loop = asyncio.get_event_loop()
             try:
-                await loop.run_in_executor(executor, _process_single, img_path, index)
+                _, _, skipped = await loop.run_in_executor(executor, _process_single, img_path, index, rotator_obj)
                 with results_lock:
                     results["success_count"] += 1
                     completed_count += 1
                     count = completed_count
+                    if skipped:
+                        results["skipped_count"] = results.get("skipped_count", 0) + 1
             except CancellationError:
                 cancelled = True
                 raise
@@ -1617,7 +1617,7 @@ async def _batch_translate_parallel(
                 )
 
     with ThreadPoolExecutor(max_workers=n_workers) as executor:
-        tasks = [_worker(img, i, executor) for i, img in enumerate(remaining, start=1)]
+        tasks = [_worker(img, i, executor, rotator) for i, img in enumerate(remaining, start=1)]
         gathered = await asyncio.gather(*tasks, return_exceptions=True)
 
     for exc in gathered:
@@ -1634,6 +1634,7 @@ def batch_translate_images(
     progress_callback: Optional[Callable[[float, str], None]] = None,
     preserve_structure: bool = False,
     cancellation_manager: Optional["CancellationManager"] = None,
+    rotator=None,
 ) -> Dict[str, Any]:
     """
     Process all images in a directory using a configuration object.
@@ -1694,6 +1695,8 @@ def batch_translate_images(
     if progress_callback:
         progress_callback(0.0, f"Starting batch processing of {total_images} images...")
 
+    rotator = RotatorSession(config)
+
     if config.parallel_requests > 1:
         results = asyncio.run(
             _batch_translate_parallel(
@@ -1704,6 +1707,7 @@ def batch_translate_images(
                 preserve_structure=preserve_structure,
                 progress_callback=progress_callback,
                 cancellation_manager=cancellation_manager,
+                rotator=rotator,
             )
         )
     else:
@@ -1721,6 +1725,12 @@ def batch_translate_images(
                 if cancellation_manager and cancellation_manager.is_cancelled():
                     raise CancellationError("Batch process cancelled by user.")
 
+                if output_path.exists():
+                    log_message(f"Skipping {i + 1}/{total_images}: {display_path} (Already exists)", always_print=True)
+                    results["success_count"] += 1
+                    results["skipped_count"] = results.get("skipped_count", 0) + 1
+                    continue
+
                 if progress_callback:
                     current_progress = i / total_images
                     progress_callback(
@@ -1733,11 +1743,13 @@ def batch_translate_images(
                     always_print=True,
                 )
 
-                translate_and_render(
+                translate_with_retry(
                     img_path,
                     config,
                     output_path,
+                    rotator,
                     cancellation_manager=cancellation_manager,
+                    display_path=display_path
                 )
 
                 results["success_count"] += 1
@@ -1768,6 +1780,37 @@ def batch_translate_images(
                         completed_progress,
                         f"Completed {i + 1}/{total_images} images (with errors)",
                     )
+
+    # RETRY PASS
+    if results.get("error_count", 0) > 0:
+        log_message(f"\n🔄 RETRY PASS: Attempting to re-translate {results['error_count']} failed images...", always_print=True)
+        rotator.reset_exhaustion()
+        
+        failed_files = []
+        for img_path in image_files:
+            output_path, display_path, error_key = _resolve_output_path(img_path, input_dir, output_dir, config, preserve_structure)
+            if not output_path.exists():
+                failed_files.append((img_path, output_path, display_path, error_key))
+
+        for i, (img_path, output_path, display_path, error_key) in enumerate(failed_files):
+            if cancellation_manager and cancellation_manager.is_cancelled():
+                break
+            
+            if progress_callback:
+                progress_callback(i / len(failed_files), f"Retrying failed images... ({i + 1}/{len(failed_files)})")
+                
+            try:
+                log_message(f"Retrying {i + 1}/{len(failed_files)}: {display_path}", always_print=True)
+                translate_with_retry(img_path, config, output_path, rotator, cancellation_manager=cancellation_manager, display_path=display_path)
+                
+                results["success_count"] += 1
+                results["error_count"] -= 1
+                if error_key in results["errors"]:
+                    del results["errors"][error_key]
+                log_message(f"Retry successful for {display_path}", always_print=True)
+            except Exception as e:
+                log_message(f"Retry failed for {display_path}: {e}", always_print=True)
+                results["errors"][error_key] = str(e)
 
     if progress_callback:
         progress_callback(1.0, "Processing complete")
